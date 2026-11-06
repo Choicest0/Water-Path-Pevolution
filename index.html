@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AquaPure Analytics & Supply Records</title>
+    <style>
+        :root {
+            --bg-light: #e0f2fe;
+            --card-bg: #ffffff;
+            --primary-blue: #0284c7;
+            --accent-blue: #38bdf8;
+            --hover-blue: #0369a1;
+            --text-dark: #0f172a;
+            --border-color: #bae6fd;
+            --badge-safe: #06b6d4;
+            --badge-flag: #ef4444;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-light);
+            color: var(--text-dark);
+            margin: 0;
+            padding: 20px;
+        }
+
+        header {
+            background-color: var(--primary-blue);
+            color: white;
+            padding: 1.5rem;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 6px rgba(2, 132, 199, 0.2);
+            margin-bottom: 25px;
+        }
+
+        .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 2px 8px rgba(56, 189, 248, 0.15);
+        }
+
+        h2 {
+            color: var(--primary-blue);
+            margin-top: 0;
+            border-bottom: 2px solid var(--bg-light);
+            padding-bottom: 8px;
+        }
+
+        .form-group {
+            margin-bottom: 12px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 4px;
+            font-weight: 600;
+        }
+
+        input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            box-sizing: border-box;
+            background-color: #f0f9ff;
+        }
+
+        button {
+            background-color: var(--primary-blue);
+            color: white;
+            border: none;
+            padding: 10px 18px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background-color: var(--hover-blue);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid var(--bg-light);
+        }
+
+        th {
+            background-color: #f0f9ff;
+            color: var(--primary-blue);
+        }
+
+        .status-badge {
+            padding: 4px 8px;
+            border-radius: 4px;
+            color: white;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+        .status-SAFE { background-color: var(--badge-safe); }
+        .status-FLAGGED { background-color: var(--badge-flag); }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>💧 Pure Water Analytics & Supply Records</h1>
+    </header>
+
+    <div class="container">
+        <!-- Water Quality Input -->
+        <div class="card">
+            <h2>🧪 Log Water Quality Analytics</h2>
+            <div class="form-group">
+                <label>Source Name</label>
+                <input type="text" id="source" value="Central RO Plant">
+            </div>
+            <div class="form-group">
+                <label>pH Level (Safe: 6.5 - 8.5)</label>
+                <input type="number" step="0.1" id="ph" value="7.2">
+            </div>
+            <div class="form-group">
+                <label>TDS (ppm) (Safe: &lt; 300)</label>
+                <input type="number" id="tds" value="135">
+            </div>
+            <div class="form-group">
+                <label>Turbidity (NTU) (Safe: &lt; 1.0)</label>
+                <input type="number" step="0.1" id="turbidity" value="0.2">
+            </div>
+            <button onclick="logQuality()">Record & Test Batch</button>
+        </div>
+
+        <!-- Water Supply Input -->
+        <div class="card">
+            <h2>🚚 Log Water Supply Delivery</h2>
+            <div class="form-group">
+                <label>Customer Name</label>
+                <input type="text" id="customer" placeholder="e.g., Green Valley Society">
+            </div>
+            <div class="form-group">
+                <label>Liters Supplied</label>
+                <input type="number" id="liters" value="1500">
+            </div>
+            <div class="form-group">
+                <label>Quality Batch ID</label>
+                <input type="number" id="batch_id" value="1">
+            </div>
+            <button onclick="logSupply()">Log Supply Record</button>
+        </div>
+    </div>
+
+    <!-- Data Tables Section -->
+    <div class="container" style="margin-top: 25px;">
+        <div class="card" style="grid-column: span 2;">
+            <h2>📊 Real-Time Quality Testing Logs</h2>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Batch ID</th>
+                        <th>Source</th>
+                        <th>pH</th>
+                        <th>TDS</th>
+                        <th>Turbidity</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody id="qualityTableBody">
+                    <!-- Dynamic Rows -->
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://127.0.0.1:5000/api';
+
+        async function logQuality() {
+            const data = {
+                source: document.getElementById('source').value,
+                ph: document.getElementById('ph').value,
+                tds: document.getElementById('tds').value,
+                turbidity: document.getElementById('turbidity').value,
+                microbial: 0
+            };
+            await fetch(`${API_URL}/quality`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            loadTables();
+        }
+
+        async function logSupply() {
+            const data = {
+                customer: document.getElementById('customer').value,
+                liters: document.getElementById('liters').value,
+                batch_id: document.getElementById('batch_id').value
+            };
+            await fetch(`${API_URL}/supply`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
+            alert('Supply Record Logged Successfully!');
+        }
+
+        async function loadTables() {
+            const res = await fetch(`${API_URL}/quality`);
+            const records = await res.json();
+            const tbody = document.getElementById('qualityTableBody');
+            tbody.innerHTML = '';
+            records.forEach(r => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>#${r.id}</td>
+                        <td>${r.source}</td>
+                        <td>${r.ph}</td>
+                        <td>${r.tds} ppm</td>
+                        <td>${r.turbidity} NTU</td>
+                        <td><span class="status-badge status-${r.status}">${r.status}</span></td>
+                    </tr>
+                `;
+            });
+        }
+        loadTables();
+    </script>
+</body>
+</html>
